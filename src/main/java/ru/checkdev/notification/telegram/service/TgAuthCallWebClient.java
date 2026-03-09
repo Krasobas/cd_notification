@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import ru.checkdev.notification.domain.Profile;
+import ru.checkdev.notification.retry.Retry;
 import ru.checkdev.notification.service.EurekaUriProvider;
 
 /**
@@ -32,12 +33,16 @@ public class TgAuthCallWebClient implements TgCall {
      */
     @Override
     public Mono<Profile> doGet(String url) {
-        return WebClient.create(uriProvider.getUri(SERVICE_ID))
+        var retry = new Retry(3, 1000);
+        return retry.exec(() ->
+            WebClient.create(uriProvider.getUri(SERVICE_ID))
                 .get()
                 .uri(url)
                 .retrieve()
                 .bodyToMono(Profile.class)
-                .doOnError(err -> log.error("API not found: {}", err.getMessage()));
+                .doOnError(err -> log.error("API not found: {}", err.getMessage())),
+            Mono.error(new RuntimeException("All retry attempts failed"))
+        );
     }
 
     /**
@@ -49,22 +54,30 @@ public class TgAuthCallWebClient implements TgCall {
      */
     @Override
     public Mono<Object> doPost(String url, Profile profile) {
-        return WebClient.create(uriProvider.getUri(SERVICE_ID))
+        var retry = new Retry(3, 1000);
+        return retry.exec(() ->
+            WebClient.create(uriProvider.getUri(SERVICE_ID))
                 .post()
                 .uri(url)
                 .bodyValue(profile)
                 .retrieve()
                 .bodyToMono(Object.class)
-                .doOnError(err -> log.error("API not found: {}", err.getMessage()));
+                .doOnError(err -> log.error("API not found: {}", err.getMessage())),
+            Mono.error(new RuntimeException("All retry attempts failed"))
+        );
     }
 
     @Override
     public Mono<Object> doPost(String url) {
-        return WebClient.create(uriProvider.getUri(SERVICE_ID))
+        var retry = new Retry(3, 1000);
+        return retry.exec(() ->
+                WebClient.create(uriProvider.getUri(SERVICE_ID))
                 .post()
                 .uri(url)
                 .retrieve()
                 .bodyToMono(Object.class)
-                .doOnError(err -> log.error("API not found: {}", err.getMessage()));
+                .doOnError(err -> log.error("API not found: {}", err.getMessage())),
+        Mono.error(new RuntimeException("All retry attempts failed"))
+        );
     }
 }
