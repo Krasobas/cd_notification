@@ -21,9 +21,6 @@ import java.util.List;
 public class InnerMessageController {
 
     private final InnerMessageService messageService;
-    private final SubscribeCategoryService categoryService;
-    private final SubscribeTopicService topicService;
-    private final NotificationMessagesService notificationMessagesService;
 
     @GetMapping("/{id}")
     public ResponseEntity<List<InnerMessage>> findMessage(@PathVariable int id) {
@@ -35,38 +32,6 @@ public class InnerMessageController {
     public ResponseEntity<List<InnerMessageDTO>> findMessageDTO(@PathVariable int userId) {
         List<InnerMessageDTO> result = messageService.findDTOByUserIdAndReadFalse(userId);
         return new ResponseEntity<>(result, HttpStatus.OK);
-    }
-
-    @Transactional
-    @PostMapping("/newInterview")
-    public ResponseEntity<Void> createMessage(
-            @RequestBody CategoryWithTopicDTO categoryWithTopicDTO) {
-
-        List<Integer> categorySubscribersIds =
-                categoryService.findUserIdsByCategoryIdExcludeCurrent(
-                        categoryWithTopicDTO.getCategoryId(),
-                        categoryWithTopicDTO.getSubmitterId());
-
-        List<Integer> topicSubscribersIds =
-                topicService.findUserIdsByTopicIdExcludeCurrent(
-                        categoryWithTopicDTO.getTopicId(),
-                        categoryWithTopicDTO.getSubmitterId());
-
-        messageService.saveMessagesForSubscribers(
-                categoryWithTopicDTO,
-                categorySubscribersIds, topicSubscribersIds);
-
-        notificationMessagesService.sendMessagesToCategorySubscribers(
-                categorySubscribersIds,
-                categoryWithTopicDTO);
-
-        return new ResponseEntity<>(HttpStatus.OK);
-    }
-
-    @PostMapping("/message")
-    public ResponseEntity<Void> sendMessage(@RequestBody InnerMessage innerMessage) {
-        messageService.send(innerMessage);
-        return new ResponseEntity<>(HttpStatus.OK);
     }
 
     @DeleteMapping("/delete/{messageId}")

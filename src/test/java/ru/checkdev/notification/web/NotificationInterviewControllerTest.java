@@ -15,6 +15,7 @@ import ru.checkdev.notification.domain.SubscribeTopic;
 import ru.checkdev.notification.domain.UserTelegram;
 import ru.checkdev.notification.dto.InterviewNotifyDTO;
 import ru.checkdev.notification.dto.WisherNotifyDTO;
+import ru.checkdev.notification.listeners.InterviewListener;
 import ru.checkdev.notification.repository.InnerMessageRepositoryFake;
 import ru.checkdev.notification.repository.SubscribeTopicRepositoryFake;
 import ru.checkdev.notification.repository.UserTelegramRepositoryFake;
@@ -54,16 +55,15 @@ class NotificationInterviewControllerTest {
     private ServiceInstance serviceInstance;
     private MessagesGenerator messagesGenerator;
     private NotificationInterviewController notifyController;
+    private InterviewListener interviewListener;
     private InnerMessageService innerMessageService;
 
     @BeforeEach
     void setUp() {
         EurekaUriProvider uriProvider = new EurekaUriProvider(discoveryClient);
         messagesGenerator = new MessagesGenerator(uriProvider);
-        innerMessageService = new InnerMessageService(
-                innerMessageRepositoryFake, userTelegramService, uriProvider);
         notifyController = new NotificationInterviewController(
-                userTelegramService, innerMessageService, notificationMessage, messagesGenerator);
+                userTelegramService, notificationMessage, messagesGenerator);
     }
 
     @Test
@@ -142,7 +142,7 @@ class NotificationInterviewControllerTest {
                 .build();
 
         ResponseEntity<InnerMessage> expect = ResponseEntity.ok(innerMessageExpect);
-        ResponseEntity<InnerMessage> actual = notifyController.sendMessageSubmitterInterview(wisherNotifyDTO);
+        ResponseEntity<InnerMessage> actual = interviewListener.handleParticipateAuthorEvent(wisherNotifyDTO);
 
         assertThat(actual).isEqualTo(expect);
     }
